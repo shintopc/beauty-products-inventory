@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Beauty Products Inventory</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/@mdi/font@6.9.96/css/materialdesignicons.min.css" rel="stylesheet">
+  <link href="./css/style.css" rel="stylesheet">
+</head>
+<body>
+  <div id="app" class="container-fluid">
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+      <div class="container-fluid">
+        <a class="navbar-brand" href="#">Beauty Products</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav me-auto">
+            <li class="nav-item">
+              <a class="nav-link" href="#" @click="currentView='dashboard'">Dashboard</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#" @click="currentView='products'">Products</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#" @click="currentView='purchases'">Purchases</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#" @click="currentView='sales'">Sales</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#" @click="currentView='customers'">Customers</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#" @click="currentView='reports'">Reports</a>
+            </li>
+          </ul>
+          <ul class="navbar-nav">
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                <i class="mdi mdi-account"></i> {{ userEmail }}
+              </a>
+              <ul class="dropdown-menu dropdown-menu-end">
+                <li><a class="dropdown-item" href="#" @click="logout">Logout</a></li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Login Form (shown when not authenticated) -->
+    <div v-if="!isAuthenticated" class="login-container">
+      <div class="card login-card">
+        <div class="card-body">
+          <h2 class="card-title text-center">Beauty Products Inventory</h2>
+          <form @submit.prevent="login">
+            <div class="mb-3">
+              <label for="email" class="form-label">Email</label>
+              <input type="email" class="form-control" id="email" v-model="loginEmail" required>
+            </div>
+            <div class="mb-3">
+              <label for="password" class="form-label">Password</label>
+              <input type="password" class="form-control" id="password" v-model="loginPassword" required>
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Login</button>
+          </form>
+          <div class="text-center mt-3">
+            <a href="#" @click="showRegister = true">Register new account</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Registration Form -->
+      <div v-if="showRegister" class="card login-card mt-3">
+        <div class="card-body">
+          <h3 class="card-title text-center">Register</h3>
+          <form @submit.prevent="register">
+            <div class="mb-3">
+              <label for="reg-email" class="form-label">Email</label>
+              <input type="email" class="form-control" id="reg-email" v-model="registerEmail" required>
+            </div>
+            <div class="mb-3">
+              <label for="reg-password" class="form-label">Password</label>
+              <input type="password" class="form-control" id="reg-password" v-model="registerPassword" required>
+            </div>
+            <div class="mb-3">
+              <label for="reg-confirm" class="form-label">Confirm Password</label>
+              <input type="password" class="form-control" id="reg-confirm" v-model="registerConfirm" required>
+            </div>
+            <button type="submit" class="btn btn-success w-100">Register</button>
+          </form>
+          <div class="text-center mt-3">
+            <a href="#" @click="showRegister = false">Back to login</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content (shown when authenticated) -->
+    <div v-if="isAuthenticated" class="main-content">
+      <!-- Dashboard View -->
+      <div v-if="currentView === 'dashboard'" class="dashboard-view">
+        <div class="row mt-3">
+          <div class="col-md-3">
+            <div class="card text-white bg-primary mb-3">
+              <div class="card-body">
+                <h5 class="card-title">Total Products</h5>
+                <p class="card-text display-6">{{ totalProducts }}</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="card text-white bg-success mb-3">
+              <div class="card-body">
+                <h5 class="card-title">Current Stock Value</h5>
+                <p class="card-text display-6">₹{{ totalStockValue.toLocaleString() }}</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="card text-white bg-info mb-3">
+              <div class="card-body">
+                <h5 class="card-title">Monthly Sales</h5>
+                <p class="card-text display-6">₹{{ monthlySales.toLocaleString() }}</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="card text-white bg-warning mb-3">
+              <div class="card-body">
+                <h5 class="card-title">Monthly Profit</h5>
+                <p class="card-text display-6">₹{{ monthlyProfit.toLocaleString() }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row mt-3">
+          <div class="col-md-6">
+            <div class="card">
+              <div class="card-header">
+                <h5>Low Stock Items</h5>
+              </div>
+              <div class="card-body">
+                <table class="table table-striped">
+                  <thead>
+                    <tr>
+                      <th>Product</th>
+                      <th>Current Stock</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="product in lowStockProducts" :key="product.id">
+                      <td>{{ product.name }}</td>
+                      <td>{{ product.stock }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="card">
+              <div class="card-header">
+                <h5>Recent Sales</h5>
+              </div>
+              <div class="card-body">
+                <table class="table table-striped">
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Customer</th>
+                      <th>Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="sale in recentSales" :key="sale.id">
+                      <td>{{ formatDate(sale.date) }}</td>
+                      <td>{{ sale.customerName }}</td>
+                      <td>₹{{ sale.totalAmount.toLocaleString() }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Products View -->
+      <div v-if="currentView === 'products'" class="products-view">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h2>Products</h2>
+          <button class="btn btn-primary" @click="showAddProductModal = true">
+            <i class="mdi mdi-plus"></i> Add Product
+          </button>
+        </div>
+        
+        <div class="card">
+          <div class="card-body">
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Name</th>
+                  <th>Category</th>
+                  <th>Purchase Price</th>
+                  <th>Selling Price</th>
+                  <th>Stock</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="product in products" :key="product.id">
+                  <td>{{ product.id }}</td>
+                  <td>{{ product.name }}</td>
+                  <td>{{ product.category }}</td>
+                  <td>₹{{ product.purchasePrice.toLocaleString() }}</td>
+                  <td>₹{{ product.sellingPrice.toLocaleString() }}</td>
+                  <td>{{ product.stock }}</td>
+                  <td>
+                    <button class="btn btn-sm btn-info" @click="editProduct(product)">
+                      <i class="mdi mdi-pencil"></i>
+                    </button>
+                    <button class="btn btn-sm btn-danger" @click="confirmDeleteProduct(product.id)">
+                      <i class="mdi mdi-delete"></i>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Purchases View -->
+      <div v-if="currentView === 'purchases'" class="purchases-view">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h2>Purchases</h2>
+          <button class="btn btn-primary" @click="showAddPurchaseModal = true">
+            <i class="mdi mdi-plus"></i> Add Purchase
+          </button>
+        </div>
+        
+        <div class="card">
+          <div class="card-body">
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Supplier</th>
+                  <th>Product</th>
+                  <th>Quantity</th>
+                  <th>Unit Price</th>
+                  <th>Total</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="purchase in purchases" :key="purchase.id">
+                  <td>{{ formatDate(purchase.date) }}</td>
+                  <td>{{ purchase.supplier }}</td>
+                  <td>{{ getProductName(purchase.productId) }}</td>
+                  <td>{{ purchase.quantity }}</td>
+                  <td>₹{{ purchase.unitPrice.toLocaleString() }}</td>
+                  <td>₹{{ (purchase.quantity * purchase.unitPrice).toLocaleString() }}</td>
+                  <td>
+                    <button class="btn btn-sm btn-danger" @click="confirmDeletePurchase(purchase.id)">
+                      <i class="mdi mdi-delete"></i>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sales View -->
+      <div v-if="currentView === 'sales'" class="sales-view">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h2>Sales</h2>
+          <button class="btn btn-primary" @click="showAddSaleModal = true">
+            <i class="mdi mdi-plus"></i> Add Sale
+          </button>
+        </div>
+        
+        <div class="card">
+          <div class="card-body">
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Customer</th>
+                  <th>Products</th>
+                  <th>Total Amount</th>
+                  <th>Profit</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="sale in sales" :key="sale.id">
+                  <td>{{ formatDate(sale.date) }}</td>
+                  <td>{{ sale.customerName }}</td>
+                  <td>
+                    <span v-for="item in sale.items" :key="item.productId">
+                      {{ getProductName(item.productId) }} ({{ item.quantity }}),
+                    </span>
+                  </td>
+                  <td>₹{{ sale.totalAmount.toLocaleString() }}</td>
+                  <td>₹{{ calculateSaleProfit(sale).toLocaleString() }}</td>
+                  <td>
+                    <button class="btn btn-sm btn-danger" @click="confirmDeleteSale(sale.id)">
+                      <i class="mdi mdi-delete"></i>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Customers View -->
+      <div v-if="currentView === 'customers'" class="customers-view">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h2>Customers</h2>
+          <button class="btn btn-primary" @click="showAddCustomerModal = true">
+            <i class="mdi mdi-plus"></i> Add Customer
+          </button>
+        </div>
+        
+        <div class="card">
+          <div class="card-body">
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Phone</th>
+                  <th>Total Purchases</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="customer in customers" :key="customer.id">
+                  <td>{{ customer.name }}</td>
+                  <td>{{ customer.email }}</td>
+                  <td>{{ customer.phone }}</td>
+                  <td>₹{{ getCustomerTotalPurchases(customer.id).toLocaleString() }}</td>
+                  <td>
+                    <button class="btn btn-sm btn-info" @click="editCustomer(customer)">
+                      <i class="mdi mdi-pencil"></i>
+                    </button>
+                    <button class="btn btn-sm btn-danger" @click="confirmDeleteCustomer(customer.id)">
+                      <i class="mdi mdi-delete"></i>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Reports View -->
+      <div v-if="currentView === 'reports'" class="reports-view">
+        <h2>Reports</h2>
+        
+        <div class="row mt-3">
+          <div class="col-md-6">
+            <div class="card">
+              <div class="card-header">
+                <h5>Monthly Sales Report</h5>
+                <div class="row mt-2">
+                  <div class="col-md-6">
+                    <select class="form-select" v-model="reportMonth">
+                      <option value="">All Months</option>
+                      <option v-for="(month, index) in months" :value="index + 1" :key="index">{{ month }}</option>
+                    </select>
+                  </div>
+                  <div class="col-md-6">
+                    <select class="form-select" v-model="reportYear">
+                      <option value="">All Years</option>
+                      <option v-for="year in availableYears" :value="year" :key="year">{{ year }}</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+              <div class="card-body">
+                <canvas id="salesChart"></canvas>
+                <div class="mt-3">
+                  <h6>Total Sales: ₹{{ filteredSalesTotal.toLocaleString() }}</h6>
+                  <h6>Total Profit: ₹{{ filteredProfitTotal.toLocaleString() }}</h6>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="card">
+              <div class="card-header">
+                <h5>Product Performance</h5>
+              </div>
+              <div class="card-body">
+                <canvas id="productsChart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row mt-3">
+          <div class="col-md-12">
+            <div class="card">
+              <div class="card-header">
+                <h5>Detailed Transactions</h5>
+              </div>
+              <div class="card-body">
+                <table class="table table-striped">
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Type</th>
+                      <th>Details</th>
+                      <th>Amount</th>
+                      <th>Profit</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="transaction in filteredTransactions" :key="transaction.id">
+                      <td>{{ formatDate(transaction.date) }}</td>
+                      <td>{{ transaction.type }}</td>
+                      <td>
+                        <span v-if="transaction.type === 'Sale'">
+                          Sale to {{ transaction.customerName }}
+                        </span>
+                        <span v-if="transaction.type === 'Purchase'">
+                          Purchase from {{ transaction.supplier }}
+                        </span>
+                      </td>
+                      <td>
+                        <span v-if="transaction.type === 'Sale'">₹{{ transaction.totalAmount.toLocaleString() }}</span>
+                        <span v-if="transaction.type === 'Purchase'">₹{{ (transaction.quantity * transaction.unitPrice).toLocaleString() }}</span>
+                      </td>
+                      <td>
+                        <span v-if="transaction.type === 'Sale'">₹{{ calculateSaleProfit(transaction).toLocaleString() }}</span>
+                        <span v-if="transaction.type === 'Purchase'">-</span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modals -->
+    
+    <!-- Add/Edit Product Modal -->
+    <div class="modal fade" id="productModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">{{ editingProduct ? 'Edit' : 'Add' }} Product</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form @submit.prevent="saveProduct">
+              <div class="mb-3">
+                <label for="productName" class="form-label">Product Name</label>
+                <input type="text" class="form-control" id="productName" v-model="productForm.name" required>
+              </div>
+              <div class="mb-3">
+                <label for="productCategory" class="form-label">Category</label>
+                <input type="text" class="form-control" id="productCategory" v-model="productForm.category" required>
+              </div>
+              <div class="mb-3">
+                <label for="productPurchasePrice" class="form-label">Purchase Price</label>
+                <input type="number" step="0.01" class="form-control" id="productPurchasePrice" v-model="productForm.purchasePrice" required>
+              </div>
+              <div class="mb-3">
+                <label for="productSellingPrice" class="form-label">Selling Price</label>
+                <input type="number" step="0.01" class="form-control" id="productSellingPrice" v-model="productForm.sellingPrice" required>
+              </div>
+              <div class="mb-3">
+                <label for="productStock" class="form-label">Initial Stock</label>
+                <input type="number" class="form-control" id="productStock" v-model="productForm.stock" required>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add Purchase Modal -->
+    <div class="modal fade" id="purchaseModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Add Purchase</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form @submit.prevent="savePurchase">
+              <div class="mb-3">
+                <label for="purchaseDate" class="form-label">Date</label>
+                <input type="date" class="form-control" id="purchaseDate" v-model="purchaseForm.date" required>
+              </div>
+              <div class="mb-3">
+                <label for="purchaseSupplier" class="form-label">Supplier</label>
+                <input type="text" class="form-control" id="purchaseSupplier" v-model="purchaseForm.supplier" required>
+              </div>
+              <div class="mb-3">
+                <label for="purchaseProduct" class="form-label">Product</label>
+                <select class="form-select" id="purchaseProduct" v-model="purchaseForm.productId" required>
+                  <option v-for="product in products" :value="product.id" :key="product.id">{{ product.name }}</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label for="purchaseQuantity" class="form-label">Quantity</label>
+                <input type="number" class="form-control" id="purchaseQuantity" v-model="purchaseForm.quantity" required>
+              </div>
+              <div class="mb-3">
+                <label for="purchaseUnitPrice" class="form-label">Unit Price</label>
+                <input type="number" step="0.01" class="form-control" id="purchaseUnitPrice" v-model="purchaseForm.unitPrice" required>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add Sale Modal -->
+    <div class="modal fade" id="saleModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Add Sale</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form @submit.prevent="saveSale">
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="saleDate" class="form-label">Date</label>
+                    <input type="date" class="form-control" id="saleDate" v-model="saleForm.date" required>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="saleCustomer" class="form-label">Customer</label>
+                    <select class="form-select" id="saleCustomer" v-model="saleForm.customerId" required>
+                      <option v-for="customer in customers" :value="customer.id" :key="customer.id">{{ customer.name }}</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+              
+              <h5 class="mt-3">Items</h5>
+              <div class="table-responsive">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th>Product</th>
+                      <th>Quantity</th>
+                      <th>Unit Price</th>
+                      <th>Total</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(item, index) in saleForm.items" :key="index">
+                      <td>
+                        <select class="form-select" v-model="item.productId" @change="updateItemPrice(index)" required>
+                          <option v-for="product in products" :value="product.id" :key="product.id">{{ product.name }}</option>
+                        </select>
+                      </td>
+                      <td>
+                        <input type="number" class="form-control" v-model="item.quantity" @change="updateItemTotal(index)" min="1" required>
+                      </td>
+                      <td>
+                        <input type="number" step="0.01" class="form-control" v-model="item.unitPrice" @change="updateItemTotal(index)" required>
+                      </td>
+                      <td>₹{{ (item.quantity * item.unitPrice).toLocaleString() }}</td>
+                      <td>
+                        <button type="button" class="btn btn-sm btn-danger" @click="removeSaleItem(index)">
+                          <i class="mdi mdi-delete"></i>
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                  <tfoot>
+                    <tr>
+                      <td colspan="4" class="text-end">
+                        <strong>Total: ₹{{ saleForm.totalAmount.toLocaleString() }}</strong>
+                      </td>
+                      <td>
+                        <button type="button" class="btn btn-sm btn-success" @click="addSaleItem">
+                          <i class="mdi mdi-plus"></i> Add Item
+                        </button>
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+              
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add/Edit Customer Modal -->
+    <div class="modal fade" id="customerModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">{{ editingCustomer ? 'Edit' : 'Add' }} Customer</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form @submit.prevent="saveCustomer">
+              <div class="mb-3">
+                <label for="customerName" class="form-label">Name</label>
+                <input type="text" class="form-control" id="customerName" v-model="customerForm.name" required>
+              </div>
+              <div class="mb-3">
+                <label for="customerEmail" class="form-label">Email</label>
+                <input type="email" class="form-control" id="customerEmail" v-model="customerForm.email">
+              </div>
+              <div class="mb-3">
+                <label for="customerPhone" class="form-label">Phone</label>
+                <input type="text" class="form-control" id="customerPhone" v-model="customerForm.phone" required>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div class="modal fade" id="confirmModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Confirm</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <p>{{ confirmMessage }}</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-danger" @click="confirmAction">Confirm</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vue@3.2.47/dist/vue.global.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="./js/app.js"></script>
+</body>
+</html>
