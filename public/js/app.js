@@ -5,15 +5,7 @@
   // TODO: Add SDKs for Firebase products that you want to use
   // https://firebase.google.com/docs/web/setup#available-libraries
 
-  // Your web app's Firebase configuration
-  const firebaseConfig = {
-    apiKey: "AIzaSyAtvI5XjObW1xborw8yNHT-5cKDPwo1ac4",
-    authDomain: "beauty-products-inventory.firebaseapp.com",
-    projectId: "beauty-products-inventory",
-    storageBucket: "beauty-products-inventory.firebasestorage.app",
-    messagingSenderId: "854724445654",
-    appId: "1:854724445654:web:8c292a16bd2d78b09e9077"
-  };
+;
 
   // Initialize Firebase
   const app = initializeApp(firebaseConfig);
